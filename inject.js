@@ -21,6 +21,15 @@ const payload = `
         return 0;
     }
 
+    function parseQuality(stream) {
+        var text = [stream.quality, stream.name, stream.title, stream.description].join(' ').toLowerCase();
+        if (text.indexOf('4k') > -1 || text.indexOf('2160') > -1 || text.indexOf('uhd') > -1) return '4K';
+        if (text.indexOf('1080') > -1 || text.indexOf('fhd') > -1) return '1080p';
+        if (text.indexOf('720') > -1 || (text.indexOf('hd') > -1 && text.indexOf('uhd') === -1 && text.indexOf('fhd') === -1)) return '720p';
+        if (text.indexOf('480') > -1 || text.indexOf('sd') > -1) return '480p';
+        return 'Unknown';
+    }
+
     function overrideGetStreams() {
         var args = arguments;
         var context = this;
@@ -34,9 +43,11 @@ const payload = `
             
             for (var i = 0; i < rawStreams.length; i++) {
                 var stream = rawStreams[i];
-                var quality = stream.quality || 'Unknown';
+                var quality = parseQuality(stream);
                 var sizeMB = parseSizeToMB(stream.size || stream.title || stream.name || stream.description);
                 
+                stream.quality = quality;
+
                 if (!bestStreams[quality]) {
                     bestStreams[quality] = { stream: stream, sizeMB: sizeMB };
                 } else {
@@ -47,7 +58,7 @@ const payload = `
             }
             
             var results = [];
-            var order = { '4K': 1, '2160p': 1, '1080p': 2, '720p': 3, '480p': 4, 'Unknown': 99 };
+            var order = { '4K': 1, '1080p': 2, '720p': 3, '480p': 4, 'Unknown': 99 };
             var keys = Object.keys(bestStreams);
             
             keys.sort(function(a, b) {
