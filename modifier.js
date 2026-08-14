@@ -4,7 +4,6 @@ const path = require('path');
 const srcDir = path.join(__dirname, 'src');
 
 const filterLogic = `
-// --- INJECTED SMART FILTER ---
 function parseSizeToMB(sizeStr) {
     if (!sizeStr) return 0;
     const match = String(sizeStr).match(/([\\d.]+)\\s*(GB|MB|KB)/i);
@@ -19,8 +18,15 @@ function parseSizeToMB(sizeStr) {
 
 export async function getStreams(tmdbId, mediaType, season, episode) {
     try {
+        console.log(\`[SmartFilter] Bắt đầu cào dữ liệu cho TMDB: \${tmdbId} | Type: \${mediaType}\`);
         const rawStreams = await originalGetStreams(tmdbId, mediaType, season, episode);
-        if (!rawStreams || !rawStreams.length) return [];
+        
+        if (!rawStreams || !rawStreams.length) {
+            console.log(\`[SmartFilter] Không tìm thấy luồng thô nào.\`);
+            return [];
+        }
+
+        console.log(\`[SmartFilter] Nhận được \${rawStreams.length} luồng thô. Bắt đầu lọc...\`);
 
         const bestStreams = {};
         for (const stream of rawStreams) {
@@ -41,12 +47,15 @@ export async function getStreams(tmdbId, mediaType, season, episode) {
         const keys = Object.keys(bestStreams).sort((a, b) => (order[a] || 99) - (order[b] || 99));
 
         for (const key of keys) {
-            results.push(bestStreams[key].stream);
+            const best = bestStreams[key];
+            console.log(\`[SmartFilter] Giữ lại: [\${key}] - Size: \${best.sizeMB.toFixed(2)} MB - URL: \${best.stream.url}\`);
+            results.push(best.stream);
         }
 
+        console.log(\`[SmartFilter] Hoàn tất! Trả về \${results.length} luồng phát tốt nhất.\`);
         return results;
     } catch (err) {
-        console.error("Filter Error:", err);
+        console.error("[SmartFilter] Lỗi trong quá trình lọc:", err);
         return [];
     }
 }
@@ -59,7 +68,6 @@ if (fs.existsSync(srcDir)) {
         if (fs.existsSync(indexPath)) {
             let content = fs.readFileSync(indexPath, 'utf8');
             
-            // Đổi tên hàm gốc để nhường chỗ cho hàm lọc của chúng ta
             if (content.includes('export async function getStreams')) {
                 content = content.replace('export async function getStreams', 'async function originalGetStreams');
                 content += '\n' + filterLogic;
