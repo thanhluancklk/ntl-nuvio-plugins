@@ -1,4 +1,4 @@
-name: Auto Sync Nuvio Plugins
+name: Auto Sync & Build Clean Plugins
 
 on:
   schedule:
@@ -6,10 +6,10 @@ on:
   workflow_dispatch:
 
 jobs:
-  sync-plugins:
+  build-plugins:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
+      - name: Checkout my repo
         uses: actions/checkout@v4
 
       - name: Setup Node.js
@@ -17,31 +17,30 @@ jobs:
         with:
           node-version: '20'
 
-      - name: Create providers directory
-        run: mkdir -p providers
-
-      - name: Download plugin files
+      - name: Clone upstream Nuvio repo (Clean Source)
         run: |
-          BASE_URL="https://raw.githubusercontent.com/NuvioPlugin/All-in-One-Nuvio/main/providers"
-          curl -sSL "$BASE_URL/goated.js" -o providers/goated.js
-          curl -sSL "$BASE_URL/videasy.js" -o providers/videasy.js
-          curl -sSL "$BASE_URL/cinefreak.js" -o providers/cinefreak.js
-          curl -sSL "$BASE_URL/4khdhub.js" -o providers/4khdhub.js
-          curl -sSL "$BASE_URL/uhdmovies.js" -o providers/uhdmovies.js
-          curl -sSL "$BASE_URL/netmirro.js" -o providers/netmirro.js
-          curl -sSL "$BASE_URL/onlykdrama.js" -o providers/onlykdrama.js
+          git clone --depth 1 https://github.com/NuvioPlugin/All-in-One-Nuvio.git upstream_repo
+          rm -rf src
+          cp -r upstream_repo/src ./src
+          rm -rf upstream_repo
 
-      - name: Inject Auto-Filter Logic
-        run: node inject.js
+      - name: Install dependencies
+        run: npm install
 
-      - name: Commit and Push changes
+      - name: Inject Smart Filter
+        run: node modifier.js
+
+      - name: Bundle Clean Code (No Obfuscation)
+        run: node build.js
+
+      - name: Commit and Push
         run: |
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
-          git add providers/*.js
+          git add providers/*.js src/ package.json package-lock.json
           if git diff --staged --quiet; then
             echo "No changes"
           else
-            git commit -m "Auto-update and inject filter logic"
+            git commit -m "Auto-sync, inject filter, and build clean code"
             git push
           fi
