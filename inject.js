@@ -9,89 +9,92 @@ const payload = `
     var originalGetStreams = originalExports.getStreams || (originalExports.default && originalExports.default.getStreams);
     if (!originalGetStreams) return;
 
-    function checkAliveMobile(url, headers) {
-        return new Promise(function(resolve) {
-            var fetchOpts = { 
-                method: 'GET', 
-                headers: Object.assign({}, headers || {}) 
-            };
-            // Mẹo: Chỉ tải 1 byte đầu tiên của video để test, không bị CDN chặn như method HEAD
-            fetchOpts.headers['Range'] = 'bytes=0-1';
-
-            var timeoutId = setTimeout(function() {
-                resolve(false);
-            }, 3000);
-
-            // Kiểm tra an toàn xem môi trường có hỗ trợ AbortController không
-            if (typeof AbortController !== 'undefined') {
-                var controller = new AbortController();
-                fetchOpts.signal = controller.signal;
-                clearTimeout(timeoutId);
-                timeoutId = setTimeout(function() {
-                    controller.abort();
-                    resolve(false);
-                }, 3000);
-            }
-
-            fetch(url, fetchOpts).then(function(res) {
-                clearTimeout(timeoutId);
-                // Chấp nhận 200 (OK), 206 (Partial), và các mã lỗi nhẹ dưới 404
-                resolve(res.status >= 200 && res.status < 404);
-            }).catch(function() {
-                clearTimeout(timeoutId);
-                resolve(false);
-            });
-        });
+    // Hàm bóc tách dung lượng (Size) thành Megabytes để so sánh
+    function parseSizeToMB(sizeStr) {
+        if (!sizeStr) return 0;
+        var match = String(sizeStr).match(/([\\d.]+)\\s*(GB|MB|KB)/i);
+        if (!match) return 0;
+        var val = parseFloat(match[1]);
+        var unit = match[2].toUpperCase();
+        if (unit === 'GB') return val * 1024;
+        if (unit === 'MB') return val;
+        if (unit === 'KB') return val / 1024;
+        return 0;
     }
 
+    // Hàm đánh tráo logic
     function overrideGetStreams() {
         var args = arguments;
-        return Promise.resolve(originalGetStreams.apply(this, args)).then(function(rawStreams) {
+        var context = this;
+        
+        return Promise.resolve().then(function() {
+            return originalGetStreams.apply(context, args);
+        }).then(function(rawStreams) {
             if (!rawStreams || !rawStreams.length) return [];
             
             var bestStreams = {};
-            var checkPromises = [];
-
-            rawStreams.forEach(function(stream) {
+            
+            // Lọc thông minh: Gom nhóm theo độ phân giải và giữ lại link nặng nhất
+            for (var i = 0; i < rawStreams.length; i++) {
+                var stream = rawStreams[i];
                 var quality = stream.quality || 'Unknown';
-                var p = checkAliveMobile(stream.url, stream.headers).then(function(isAlive) {
-                    if (isAlive && !bestStreams[quality]) {
-                        bestStreams[quality] = stream;
+                
+                // Tìm dung lượng từ các trường có thể chứa nó
+                var sizeMB = parseSizeToMB(stream.size || stream.title || stream.name || stream.description);
+                
+                if (!bestStreams[quality]) {
+                    bestStreams[quality] = { stream: stream, sizeMB: sizeMB };
+                } else {
+                    if (sizeMB > bestStreams[quality].sizeMB) {
+                        bestStreams[quality] = { stream: stream, sizeMB: sizeMB };
                     }
-                });
-                checkPromises.push(p);
+                }
+            }
+            
+            var results = [];
+            // Sắp xếp thứ tự hiển thị: 4K -> 1080p -> 720p -> 480p
+            var order = { '4K': 1, '2160p': 1, '1080p': 2, '720p': 3, '480p': 4, 'Unknown': 99 };
+            var keys = Object.keys(bestStreams);
+            
+            keys.sort(function(a, b) {
+                var weightA = order[a] || 99;
+                var weightB = order[b] || 99;
+                return weightA - weightB;
             });
 
-            return Promise.all(checkPromises).then(function() {
-                var results = [];
-                for (var k in bestStreams) {
-                    results.push(bestStreams[k]);
-                }
-                
-                // BẢO HIỂM: Nếu Ping giết sạch link, tự động lấy 1 link/1 độ phân giải từ danh sách gốc
-                if (results.length === 0) {
-                    var fallback = {};
-                    rawStreams.forEach(function(stream) {
-                        var q = stream.quality || 'Unknown';
-                        if (!fallback[q]) fallback[q] = stream;
-                    });
-                    for (var f in fallback) {
-                        results.push(fallback[f]);
-                    }
-                }
-                
-                return results;
-            });
+            for (var j = 0; j < keys.length; j++) {
+                results.push(bestStreams[keys[j]].stream);
+            }
+            
+            return results;
         }).catch(function(err) {
             return [];
         });
     }
 
-    if (originalExports.getStreams) {
-        originalExports.getStreams = overrideGetStreams;
-    } else if (originalExports.default && originalExports.default.getStreams) {
-        originalExports.default.getStreams = overrideGetStreams;
+    // ĐÁNH TRÁO OBJECT: Tạo một object hoàn toàn mới để lách luật khoá Getter của esbuild
+    var newExports = {};
+    
+    for (var key in originalExports) {
+        newExports[key] = originalExports[key];
     }
+    
+    if (originalExports.default) {
+        newExports.default = {};
+        for (var dKey in originalExports.default) {
+            newExports.default[dKey] = originalExports.default[dKey];
+        }
+        if (newExports.default.getStreams) {
+            newExports.default.getStreams = overrideGetStreams;
+        }
+    }
+    
+    if (newExports.getStreams) {
+        newExports.getStreams = overrideGetStreams;
+    }
+    
+    // Ghi đè toàn bộ module
+    module.exports = newExports;
 })();
 `;
 
@@ -101,7 +104,8 @@ if (fs.existsSync(providersDir)) {
         if (file.endsWith('.js')) {
             const filePath = path.join(providersDir, file);
             let content = fs.readFileSync(filePath, 'utf8');
-            if (!content.includes('checkAliveMobile')) {
+            // Kiểm tra xem đã bơm code chưa để tránh bơm trùng lặp
+            if (!content.includes('overrideGetStreams')) {
                 content += '\n' + payload;
                 fs.writeFileSync(filePath, content, 'utf8');
             }
