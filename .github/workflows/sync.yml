@@ -31,13 +31,10 @@ jobs:
           curl -sSL "$BASE_URL/netmirro.js" -o providers/netmirro.js
           curl -sSL "$BASE_URL/onlykdrama.js" -o providers/onlykdrama.js
 
-      - name: Install Synchrony Deobfuscator
-        run: npm install -g synchrony
-
       - name: Deobfuscate files
         run: |
           for file in providers/*.js; do
-            synchrony "$file"
+            npx -y synchrony "$file"
             mv "${file%.js}.cleaned.js" "$file"
           done
 
