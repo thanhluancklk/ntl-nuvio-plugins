@@ -4,12 +4,14 @@ const path = require('path');
 
 const srcDir = path.join(__dirname, 'src');
 const outDir = path.join(__dirname, 'providers');
+const TARGET_PLUGINS = ['goated', 'videasy', 'cinefreak', '4khdhub', 'uhdmovies', 'netmirro', 'onlykdrama'];
 
-if (!fs.existsSync(outDir)) fs.mkdirSync(outDir);
+if (fs.existsSync(outDir)) {
+    fs.rmSync(outDir, { recursive: true, force: true });
+}
+fs.mkdirSync(outDir, { recursive: true });
 
-const providers = fs.readdirSync(srcDir).filter(f => fs.statSync(path.join(srcDir, f)).isDirectory());
-
-providers.forEach(provider => {
+TARGET_PLUGINS.forEach(provider => {
     const entry = path.join(srcDir, provider, 'index.js');
     if (fs.existsSync(entry)) {
         esbuild.build({
@@ -17,8 +19,7 @@ providers.forEach(provider => {
             bundle: true,
             outfile: path.join(outDir, `${provider}.js`),
             format: 'cjs',
-            minify: false, // QUAN TRỌNG: Giữ code sạch, không mã hoá!
-            // Bỏ qua các thư viện có sẵn trên app Nuvio để file nhẹ
+            minify: false,
             external: ['cheerio-without-node-native', 'crypto-js', 'axios'] 
         }).then(() => {
             console.log(`[Builder] Đã đóng gói sạch sẽ: ${provider}.js`);
