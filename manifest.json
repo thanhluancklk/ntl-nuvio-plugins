@@ -4,42 +4,56 @@
   "version": "1.0.0",
   "scrapers": [
     {
+      "id": "goated",
+      "version": "1.0.0",
       "name": "Goated",
       "filename": "providers/goated.js",
       "supportedTypes": ["movie", "tv"],
       "enabled": true
     },
     {
+      "id": "videasy",
+      "version": "1.0.0",
       "name": "VidEasy",
       "filename": "providers/videasy.js",
       "supportedTypes": ["movie", "tv"],
       "enabled": true
     },
     {
+      "id": "cinefreak",
+      "version": "1.0.0",
       "name": "CineFreak",
       "filename": "providers/cinefreak.js",
       "supportedTypes": ["movie", "tv"],
       "enabled": true
     },
     {
+      "id": "4khdhub",
+      "version": "1.0.0",
       "name": "4KHDHub",
       "filename": "providers/4khdhub.js",
       "supportedTypes": ["movie", "tv"],
       "enabled": true
     },
     {
+      "id": "uhdmovies",
+      "version": "1.0.0",
       "name": "UHDMovies",
       "filename": "providers/uhdmovies.js",
       "supportedTypes": ["movie", "tv"],
       "enabled": true
     },
     {
+      "id": "netmirro",
+      "version": "1.0.0",
       "name": "NetMirro",
       "filename": "providers/netmirro.js",
       "supportedTypes": ["movie", "tv"],
       "enabled": true
     },
     {
+      "id": "onlykdrama",
+      "version": "1.0.0",
       "name": "OnlyKDrama",
       "filename": "providers/onlykdrama.js",
       "supportedTypes": ["tv"],
