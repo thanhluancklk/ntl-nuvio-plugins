@@ -12,6 +12,11 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
       - name: Create providers directory
         run: mkdir -p providers
 
@@ -26,6 +31,9 @@ jobs:
           curl -sSL "$BASE_URL/netmirro.js" -o providers/netmirro.js
           curl -sSL "$BASE_URL/onlykdrama.js" -o providers/onlykdrama.js
 
+      - name: Inject Auto-Filter Logic
+        run: node inject.js
+
       - name: Commit and Push changes
         run: |
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
@@ -34,6 +42,6 @@ jobs:
           if git diff --staged --quiet; then
             echo "No changes"
           else
-            git commit -m "Auto-update plugins from upstream"
+            git commit -m "Auto-update and inject filter logic"
             git push
           fi
