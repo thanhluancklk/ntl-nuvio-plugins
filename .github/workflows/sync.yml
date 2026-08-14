@@ -17,9 +17,9 @@ jobs:
         with:
           node-version: '20'
 
-      - name: Clone upstream Nuvio repo (Clean Source)
+      - name: Clone upstream Nuvio repo
         run: |
-          git clone --depth 1 https://github.com/NuvioPlugin/All-in-One-Nuvio.git upstream_repo
+          git clone -b dev --depth 1 https://github.com/NuvioPlugin/All-in-One-Nuvio.git upstream_repo
           rm -rf src
           cp -r upstream_repo/src ./src
           rm -rf upstream_repo
@@ -30,7 +30,7 @@ jobs:
       - name: Inject Smart Filter
         run: node modifier.js
 
-      - name: Bundle Clean Code (No Obfuscation)
+      - name: Bundle Clean Code
         run: node build.js
 
       - name: Commit and Push
