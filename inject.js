@@ -4,26 +4,39 @@ const path = require('path');
 const providersDir = path.join(__dirname, 'providers');
 
 const payload = `
-(function() {
+;(function() {
     var originalExports = module.exports;
     var originalGetStreams = originalExports.getStreams || (originalExports.default && originalExports.default.getStreams);
     if (!originalGetStreams) return;
 
     function checkAliveMobile(url, headers) {
         return new Promise(function(resolve) {
-            var controller = new AbortController();
+            var fetchOpts = { 
+                method: 'GET', 
+                headers: Object.assign({}, headers || {}) 
+            };
+            // Mẹo: Chỉ tải 1 byte đầu tiên của video để test, không bị CDN chặn như method HEAD
+            fetchOpts.headers['Range'] = 'bytes=0-1';
+
             var timeoutId = setTimeout(function() {
-                controller.abort();
                 resolve(false);
             }, 3000);
 
-            fetch(url, {
-                method: 'HEAD',
-                headers: headers || {},
-                signal: controller.signal
-            }).then(function(res) {
+            // Kiểm tra an toàn xem môi trường có hỗ trợ AbortController không
+            if (typeof AbortController !== 'undefined') {
+                var controller = new AbortController();
+                fetchOpts.signal = controller.signal;
                 clearTimeout(timeoutId);
-                resolve(res.status === 200 || res.status === 206 || res.status === 403);
+                timeoutId = setTimeout(function() {
+                    controller.abort();
+                    resolve(false);
+                }, 3000);
+            }
+
+            fetch(url, fetchOpts).then(function(res) {
+                clearTimeout(timeoutId);
+                // Chấp nhận 200 (OK), 206 (Partial), và các mã lỗi nhẹ dưới 404
+                resolve(res.status >= 200 && res.status < 404);
             }).catch(function() {
                 clearTimeout(timeoutId);
                 resolve(false);
@@ -54,9 +67,22 @@ const payload = `
                 for (var k in bestStreams) {
                     results.push(bestStreams[k]);
                 }
+                
+                // BẢO HIỂM: Nếu Ping giết sạch link, tự động lấy 1 link/1 độ phân giải từ danh sách gốc
+                if (results.length === 0) {
+                    var fallback = {};
+                    rawStreams.forEach(function(stream) {
+                        var q = stream.quality || 'Unknown';
+                        if (!fallback[q]) fallback[q] = stream;
+                    });
+                    for (var f in fallback) {
+                        results.push(fallback[f]);
+                    }
+                }
+                
                 return results;
             });
-        }).catch(function() {
+        }).catch(function(err) {
             return [];
         });
     }
