@@ -1,63 +1,165 @@
 {
   "name": "My VIP Nuvio Plugins",
-  "description": "Bộ sưu tập plugin tự động cập nhật và plugin tự viết",
   "version": "1.0.0",
   "scrapers": [
     {
       "id": "goated",
-      "version": "1.0.0",
       "name": "Goated",
+      "description": "Goated provider",
+      "version": "1.0.0",
+      "author": "Nuvio Team",
+      "supportedTypes": [
+        "movie",
+        "tv"
+      ],
       "filename": "providers/goated.js",
-      "supportedTypes": ["movie", "tv"],
-      "enabled": true
+      "enabled": true,
+      "hasSettings": false,
+      "formats": [
+        "mp4",
+        "mkv",
+        "m3u8"
+      ],
+      "logo": "",
+      "contentLanguage": [
+        "en"
+      ]
     },
     {
       "id": "videasy",
-      "version": "1.0.0",
       "name": "VidEasy",
+      "description": "VidEasy provider",
+      "version": "1.0.0",
+      "author": "Nuvio Team",
+      "supportedTypes": [
+        "movie",
+        "tv"
+      ],
       "filename": "providers/videasy.js",
-      "supportedTypes": ["movie", "tv"],
-      "enabled": true
+      "enabled": true,
+      "hasSettings": false,
+      "formats": [
+        "mp4",
+        "mkv",
+        "m3u8"
+      ],
+      "logo": "",
+      "contentLanguage": [
+        "en"
+      ]
     },
     {
       "id": "cinefreak",
-      "version": "1.0.0",
       "name": "CineFreak",
+      "description": "CineFreak provider",
+      "version": "1.0.0",
+      "author": "Nuvio Team",
+      "supportedTypes": [
+        "movie",
+        "tv"
+      ],
       "filename": "providers/cinefreak.js",
-      "supportedTypes": ["movie", "tv"],
-      "enabled": true
+      "enabled": true,
+      "hasSettings": false,
+      "formats": [
+        "mp4",
+        "mkv",
+        "m3u8"
+      ],
+      "logo": "",
+      "contentLanguage": [
+        "en"
+      ]
     },
     {
       "id": "4khdhub",
-      "version": "1.0.0",
       "name": "4KHDHub",
+      "description": "4KHDHub direct links",
+      "version": "1.0.1",
+      "author": "Nuvio Team",
+      "supportedTypes": [
+        "movie",
+        "tv"
+      ],
       "filename": "providers/4khdhub.js",
-      "supportedTypes": ["movie", "tv"],
-      "enabled": true
+      "enabled": true,
+      "hasSettings": true,
+      "formats": [
+        "mp4",
+        "m3u8"
+      ],
+      "logo": "https://i.postimg.cc/DZpW6Xfb/4khdhub.png",
+      "contentLanguage": [
+        "en"
+      ]
     },
     {
       "id": "uhdmovies",
-      "version": "1.0.0",
       "name": "UHDMovies",
+      "description": "UHDMovies provider",
+      "version": "1.0.0",
+      "author": "Nuvio Team",
+      "supportedTypes": [
+        "movie",
+        "tv"
+      ],
       "filename": "providers/uhdmovies.js",
-      "supportedTypes": ["movie", "tv"],
-      "enabled": true
+      "enabled": true,
+      "hasSettings": false,
+      "formats": [
+        "mp4",
+        "mkv",
+        "m3u8"
+      ],
+      "logo": "",
+      "contentLanguage": [
+        "en"
+      ]
     },
     {
       "id": "netmirro",
-      "version": "1.0.0",
       "name": "NetMirro",
+      "description": "NetMirro provider",
+      "version": "1.0.0",
+      "author": "Nuvio Team",
+      "supportedTypes": [
+        "movie",
+        "tv"
+      ],
       "filename": "providers/netmirro.js",
-      "supportedTypes": ["movie", "tv"],
-      "enabled": true
+      "enabled": true,
+      "hasSettings": false,
+      "formats": [
+        "mp4",
+        "mkv",
+        "m3u8"
+      ],
+      "logo": "",
+      "contentLanguage": [
+        "en"
+      ]
     },
     {
       "id": "onlykdrama",
-      "version": "1.0.0",
       "name": "OnlyKDrama",
+      "description": "OnlyKDrama provider",
+      "version": "1.0.0",
+      "author": "Nuvio Team",
+      "supportedTypes": [
+        "tv"
+      ],
       "filename": "providers/onlykdrama.js",
-      "supportedTypes": ["tv"],
-      "enabled": true
+      "enabled": true,
+      "hasSettings": false,
+      "formats": [
+        "mp4",
+        "mkv",
+        "m3u8"
+      ],
+      "logo": "",
+      "contentLanguage": [
+        "en"
+      ]
     }
   ]
 }
