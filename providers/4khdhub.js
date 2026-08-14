@@ -38,19 +38,25 @@ const _0x242fc1=_0x35c1;(function(_0x3e594b,_0x19aec9){const _0x2b9eba={_0x4ee09
                 var text = (stream.quality + ' ' + stream.name + ' ' + stream.title + ' ' + stream.description).toLowerCase();
                 var sizeMB = parseSizeToMB(stream.size || stream.title || stream.name || stream.description);
                 var score = sizeMB;
-                if (text.indexOf('h265') > -1 || text.indexOf('hevc') > -1 || text.indexOf('10bit') > -1) score += 0.1;
+                if (text.indexOf('eng') > -1 || text.indexOf('english') > -1) score += 1000000;
+                if (text.indexOf('dual') > -1 || text.indexOf('multi') > -1) score += 500000;
+                if (text.indexOf('h265') > -1 || text.indexOf('hevc') > -1) score += 100000;
                 stream.quality = quality;
                 if (!bestStreams[quality] || score > bestStreams[quality].score) {
                     bestStreams[quality] = { stream: stream, score: score };
                 }
             }
+            if (bestStreams['4K'] && bestStreams['1080p']) {
+                delete bestStreams['720p'];
+                delete bestStreams['480p'];
+            }
             var results = [];
-            var order = { '4K': 1, '1080p': 2, '720p': 3, '480p': 4, 'Unknown': 99 };
-            var sortedKeys = Object.keys(bestStreams).sort(function(a, b) {
-                return (order[a] || 99) - (order[b] || 99);
-            });
-            for (var j = 0; j < sortedKeys.length; j++) {
-                results.push(bestStreams[sortedKeys[j]].stream);
+            var order = ['4K', '1080p', '720p', '480p', 'Unknown'];
+            for (var k = 0; k < order.length; k++) {
+                var q = order[k];
+                if (bestStreams[q]) {
+                    results.push(bestStreams[q].stream);
+                }
             }
             return results;
         }).catch(function() {
