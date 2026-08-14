@@ -2,6 +2,7 @@ const fs = require('fs');
 const path = require('path');
 
 const srcDir = path.join(__dirname, 'src');
+const TARGET_PLUGINS = ['goated', 'videasy', 'cinefreak', '4khdhub', 'uhdmovies', 'netmirro', 'onlykdrama'];
 
 const filterLogic = `
 function parseSizeToMB(sizeStr) {
@@ -62,8 +63,7 @@ export async function getStreams(tmdbId, mediaType, season, episode) {
 `;
 
 if (fs.existsSync(srcDir)) {
-    const providers = fs.readdirSync(srcDir);
-    providers.forEach(provider => {
+    TARGET_PLUGINS.forEach(provider => {
         const indexPath = path.join(srcDir, provider, 'index.js');
         if (fs.existsSync(indexPath)) {
             let content = fs.readFileSync(indexPath, 'utf8');
