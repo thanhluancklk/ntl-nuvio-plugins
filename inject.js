@@ -1,113 +1,15 @@
-const fs = require('fs');
-const path = require('path');
-
-const providersDir = path.join(__dirname, 'providers');
-
-const payload = `
-;(function() {
-    var originalExports = module.exports;
-    var originalGetStreams = originalExports.getStreams || (originalExports.default && originalExports.default.getStreams);
-    if (!originalGetStreams) return;
-
-    function parseSizeToMB(sizeStr) {
-        if (!sizeStr) return 0;
-        var match = String(sizeStr).match(/([\\d.]+)\\s*(GB|MB|KB)/i);
-        if (!match) return 0;
-        var val = parseFloat(match[1]);
-        var unit = match[2].toUpperCase();
-        if (unit === 'GB') return val * 1024;
-        if (unit === 'MB') return val;
-        if (unit === 'KB') return val / 1024;
-        return 0;
-    }
-
-    function parseQuality(stream) {
-        var text = [stream.quality, stream.name, stream.title, stream.description].join(' ').toLowerCase();
-        if (text.indexOf('4k') > -1 || text.indexOf('2160') > -1 || text.indexOf('uhd') > -1) return '4K';
-        if (text.indexOf('1080') > -1 || text.indexOf('fhd') > -1) return '1080p';
-        if (text.indexOf('720') > -1 || (text.indexOf('hd') > -1 && text.indexOf('uhd') === -1 && text.indexOf('fhd') === -1)) return '720p';
-        if (text.indexOf('480') > -1 || text.indexOf('sd') > -1) return '480p';
-        return 'Unknown';
-    }
-
-    function overrideGetStreams() {
-        var args = arguments;
-        var context = this;
-        
-        return Promise.resolve().then(function() {
-            return originalGetStreams.apply(context, args);
-        }).then(function(rawStreams) {
-            if (!rawStreams || !rawStreams.length) return [];
-            
-            var bestStreams = {};
-            
-            for (var i = 0; i < rawStreams.length; i++) {
-                var stream = rawStreams[i];
-                var quality = parseQuality(stream);
-                var sizeMB = parseSizeToMB(stream.size || stream.title || stream.name || stream.description);
-                
-                stream.quality = quality;
-
-                if (!bestStreams[quality]) {
-                    bestStreams[quality] = { stream: stream, sizeMB: sizeMB };
-                } else {
-                    if (sizeMB > bestStreams[quality].sizeMB) {
-                        bestStreams[quality] = { stream: stream, sizeMB: sizeMB };
-                    }
-                }
-            }
-            
-            var results = [];
-            var order = { '4K': 1, '1080p': 2, '720p': 3, '480p': 4, 'Unknown': 99 };
-            var keys = Object.keys(bestStreams);
-            
-            keys.sort(function(a, b) {
-                var weightA = order[a] || 99;
-                var weightB = order[b] || 99;
-                return weightA - weightB;
-            });
-
-            for (var j = 0; j < keys.length; j++) {
-                results.push(bestStreams[keys[j]].stream);
-            }
-            
-            return results;
-        }).catch(function(err) {
-            return [];
-        });
-    }
-
-    var newExports = {};
-    
-    for (var key in originalExports) {
-        newExports[key] = originalExports[key];
-    }
-    
-    if (originalExports.default) {
-        newExports.default = {};
-        for (var dKey in originalExports.default) {
-            newExports.default[dKey] = originalExports.default[dKey];
-        }
-        if (newExports.default.getStreams) {
-            newExports.default.getStreams = overrideGetStreams;
-        }
-    }
-    
-    if (newExports.getStreams) {
-        newExports.getStreams = overrideGetStreams;
-    }
-    
-    module.exports = newExports;
-})();
-`;
+var fs = require('fs');
+var path = require('path');
+var providersDir = path.join(__dirname, 'providers');
+var payload = ";(function() {\n    var originalExports = module.exports;\n    var originalGetStreams = originalExports.getStreams || (originalExports.default && originalExports.default.getStreams);\n    if (!originalGetStreams) return;\n    function parseSizeToMB(sizeStr) {\n        if (!sizeStr) return 0;\n        var cleaned = String(sizeStr).replace(/,/g, '');\n        var match = cleaned.match(/([\\d.]+)\\s*(GB|MB|KB|G|M|K)/i);\n        if (!match) return 0;\n        var val = parseFloat(match[1]);\n        var unit = match[2].toUpperCase();\n        if (unit === 'GB' || unit === 'G') return val * 1024;\n        if (unit === 'MB' || unit === 'M') return val;\n        if (unit === 'KB' || unit === 'K') return val / 1024;\n        return 0;\n    }\n    function parseQuality(stream) {\n        var text = (stream.quality + ' ' + stream.name + ' ' + stream.title + ' ' + stream.description).toLowerCase();\n        if (text.indexOf('4k') > -1 || text.indexOf('2160') > -1 || text.indexOf('uhd') > -1) return '4K';\n        if (text.indexOf('1080') > -1 || text.indexOf('fhd') > -1) return '1080p';\n        if (text.indexOf('720') > -1 || (text.indexOf('hd') > -1 && text.indexOf('uhd') === -1 && text.indexOf('fhd') === -1)) return '720p';\n        if (text.indexOf('480') > -1 || text.indexOf('sd') > -1) return '480p';\n        return 'Unknown';\n    }\n    function overrideGetStreams() {\n        var args = arguments;\n        var context = this;\n        return Promise.resolve().then(function() {\n            return originalGetStreams.apply(context, args);\n        }).then(function(rawStreams) {\n            if (!rawStreams || !rawStreams.length) return [];\n            var bestStreams = {};\n            for (var i = 0; i < rawStreams.length; i++) {\n                var stream = rawStreams[i];\n                var quality = parseQuality(stream);\n                var text = (stream.quality + ' ' + stream.name + ' ' + stream.title + ' ' + stream.description).toLowerCase();\n                var sizeMB = parseSizeToMB(stream.size || stream.title || stream.name || stream.description);\n                var score = sizeMB;\n                if (text.indexOf('h265') > -1 || text.indexOf('hevc') > -1 || text.indexOf('10bit') > -1) score += 0.1;\n                stream.quality = quality;\n                if (!bestStreams[quality] || score > bestStreams[quality].score) {\n                    bestStreams[quality] = { stream: stream, score: score };\n                }\n            }\n            var results = [];\n            var order = { '4K': 1, '1080p': 2, '720p': 3, '480p': 4, 'Unknown': 99 };\n            var sortedKeys = Object.keys(bestStreams).sort(function(a, b) {\n                return (order[a] || 99) - (order[b] || 99);\n            });\n            for (var j = 0; j < sortedKeys.length; j++) {\n                results.push(bestStreams[sortedKeys[j]].stream);\n            }\n            return results;\n        }).catch(function() {\n            return [];\n        });\n    }\n    var newExports = Object.create(originalExports);\n    for (var key in originalExports) {\n        newExports[key] = originalExports[key];\n    }\n    if (originalExports.default) {\n        newExports.default = Object.create(originalExports.default);\n        for (var dKey in originalExports.default) {\n            newExports.default[dKey] = originalExports.default[dKey];\n        }\n        if (newExports.default.getStreams) newExports.default.getStreams = overrideGetStreams;\n    }\n    if (newExports.getStreams) newExports.getStreams = overrideGetStreams;\n    module.exports = newExports;\n})();";
 
 if (fs.existsSync(providersDir)) {
-    const files = fs.readdirSync(providersDir);
-    files.forEach(file => {
+    var files = fs.readdirSync(providersDir);
+    files.forEach(function(file) {
         if (file.endsWith('.js')) {
-            const filePath = path.join(providersDir, file);
-            let content = fs.readFileSync(filePath, 'utf8');
-            if (!content.includes('overrideGetStreams')) {
+            var filePath = path.join(providersDir, file);
+            var content = fs.readFileSync(filePath, 'utf8');
+            if (content.indexOf('overrideGetStreams') === -1) {
                 content += '\n' + payload;
                 fs.writeFileSync(filePath, content, 'utf8');
             }
