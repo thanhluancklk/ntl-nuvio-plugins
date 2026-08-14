@@ -1,4 +1,4 @@
-name: Auto Sync & Build Clean Plugins
+name: Auto Sync and Deobfuscate Plugins
 
 on:
   schedule:
@@ -6,10 +6,10 @@ on:
   workflow_dispatch:
 
 jobs:
-  build-plugins:
+  sync-plugins:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout my repo
+      - name: Checkout repository
         uses: actions/checkout@v4
 
       - name: Setup Node.js
@@ -17,30 +17,41 @@ jobs:
         with:
           node-version: '20'
 
-      - name: Clone upstream Nuvio repo
-        run: |
-          git clone -b dev --depth 1 https://github.com/NuvioPlugin/All-in-One-Nuvio.git upstream_repo
-          rm -rf src
-          cp -r upstream_repo/src ./src
-          rm -rf upstream_repo
+      - name: Create providers directory
+        run: mkdir -p providers
 
-      - name: Install dependencies
-        run: npm install
+      - name: Download obfuscated plugin files
+        run: |
+          BASE_URL="https://raw.githubusercontent.com/NuvioPlugin/All-in-One-Nuvio/main/providers"
+          curl -sSL "$BASE_URL/goated.js" -o providers/goated.js
+          curl -sSL "$BASE_URL/videasy.js" -o providers/videasy.js
+          curl -sSL "$BASE_URL/cinefreak.js" -o providers/cinefreak.js
+          curl -sSL "$BASE_URL/4khdhub.js" -o providers/4khdhub.js
+          curl -sSL "$BASE_URL/uhdmovies.js" -o providers/uhdmovies.js
+          curl -sSL "$BASE_URL/netmirro.js" -o providers/netmirro.js
+          curl -sSL "$BASE_URL/onlykdrama.js" -o providers/onlykdrama.js
+
+      - name: Install Synchrony Deobfuscator
+        run: npm install -g synchrony
+
+      - name: Deobfuscate files
+        run: |
+          for file in providers/*.js; do
+            synchrony "$file"
+            mv "${file%.js}.cleaned.js" "$file"
+          done
 
       - name: Inject Smart Filter
-        run: node modifier.js
+        run: node inject.js
 
-      - name: Bundle Clean Code
-        run: node build.js
-
-      - name: Commit and Push
+      - name: Commit and Push changes
         run: |
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
-          git add providers/*.js src/ package.json package-lock.json
+          git add providers/*.js
           if git diff --staged --quiet; then
             echo "No changes"
           else
-            git commit -m "Auto-sync, inject filter, and build clean code"
+            git commit -m "Auto-sync, deobfuscate and inject filter"
             git push
           fi
